@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gepa-optimizer"
+version = "0.1.0"
+description = "Universal prompt optimization framework based on GEPA"
+authors = [
+  {name = "Suhas", email = "s8hasgrylls@gmail.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+keywords = ["prompt-optimization", "llm", "gepa", "ai", "machine-learning", "ui-tree-extraction"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+  "gepa>=0.0.12",
+  "pandas>=1.5.0",
+  "pydantic>=2.0.0",
+  "python-dotenv>=1.0.0",
+  "requests>=2.31.0",
+  "aiohttp>=3.8.0",
+  "asyncio-throttle>=1.0.0",
+  "google-generativeai>=0.3.0",
+  "Pillow>=9.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0",
+  "pytest-asyncio>=0.21.0",
+  "black>=23.0.0",
+  "flake8>=6.0.0",
+  "mypy>=1.0.0"
+]
+docs = [
+  "sphinx>=5.0.0",
+  "sphinx-rtd-theme>=1.2.0"
+]
+all = [
+  "pytest>=7.0.0",
+  "pytest-asyncio>=0.21.0",
+  "black>=23.0.0",
+  "flake8>=6.0.0",
+  "mypy>=1.0.0",
+  "sphinx>=5.0.0",
+  "sphinx-rtd-theme>=1.2.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/suhas/gepa-optimizer"
+Repository = "https://github.com/suhas/gepa-optimizer"
+Documentation = "https://github.com/suhas/gepa-optimizer/docs"
+"Bug Reports" = "https://github.com/suhas/gepa-optimizer/issues"
+
+[project.scripts]
+gepa-optimize = "gepa_optimizer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gepa_optimizer*"]
+
+[tool.setuptools.package-data]
+gepa_optimizer = ["*.py", "py.typed"]
