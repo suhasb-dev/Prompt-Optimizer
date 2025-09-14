@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/gepa-optimizer.svg)](https://badge.fury.io/py/gepa-optimizer)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/suhas/gepa-optimizer/workflows/Tests/badge.svg)](https://github.com/suhas/gepa-optimizer/actions)
+[![Tests](https://github.com/Suhas4321/Prompt-Optimizer/workflows/Tests/badge.svg)](https://github.com/Suhas4321/Prompt-Optimizer/actions)
 
 > **A production-ready Python library for universal prompt optimization using the GEPA (Generative Evaluation and Prompt Adaptation) framework. Built for developers who need reliable, scalable prompt optimization with comprehensive evaluation metrics.**
 
@@ -348,14 +348,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **🐛 Issues**: [GitHub Issues](https://github.com/suhas/gepa-optimizer/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/suhas/gepa-optimizer/discussions)
+- **🐛 Issues**: [GitHub Issues](https://github.com/Suhas4321/Prompt-Optimizer/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/Suhas4321/Prompt-Optimizer/discussions)
 - **📧 Email**: support@gepa-optimizer.com
 - **📚 Documentation**: [Full Documentation](https://gepa-optimizer.readthedocs.io/)
 
 ## 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=suhas/gepa-optimizer&type=Date)](https://star-history.com/#suhas/gepa-optimizer&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=Suhas4321/Prompt-Optimizer&type=Date)](https://star-history.com/#Suhas4321/Prompt-Optimizer&Date)
 
 ---
 
