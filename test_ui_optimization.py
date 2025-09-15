@@ -81,14 +81,16 @@ async def test_ui_optimization():
             model_name="gpt-4o-mini",
             api_key=os.getenv('OPENAI_API_KEY')
         ),
-        max_iterations=5,  # Reduced to avoid timeouts
-        max_metric_calls=15,  # Reduced to avoid timeouts
-        batch_size=3,  # Reduced to avoid timeouts
+        max_iterations=10,  # Reduced to avoid timeouts
+        max_metric_calls=20,  # Reduced to avoid timeouts
+        batch_size=3,
+        early_stopping=False,
+         # Reduced to avoid timeouts
         
         # GEPA-specific parameters for better optimization
         candidate_selection_strategy='pareto',  # Use Pareto selection
         skip_perfect_score=False,  # Don't skip perfect scores
-        reflection_minibatch_size=2,  # Use 2 examples for reflection
+        reflection_minibatch_size=3,  # Use 2 examples for reflection
         perfect_score=1.0,  # Perfect score threshold
         module_selector='round_robin',  # Cycle through components
         verbose=True
@@ -107,14 +109,7 @@ Your task is to:
 3. Extract their properties (text content, positioning, styling, hierarchy)
 4. Return a complete JSON tree structure that represents the UI layout
 
-The JSON should include:
-- Element types (Button, Text, Image, Container, etc.)
-- Text content where applicable
-- Styling information (colors, sizes, positioning)
-- Hierarchical relationships (parent-child structure)
-- Unique identifiers for each element
-
-Be thorough and accurate in your extraction."""
+"""
     
     # Dataset configuration
     dataset_config = {
@@ -145,10 +140,25 @@ Be thorough and accurate in your extraction."""
         if hasattr(result, 'improvement_data') and result.improvement_data:
             print(f"📈 Improvement data: {result.improvement_data}")
         
-        print("\n🎯 OPTIMIZED PROMPT:")
-        print("-" * 30)
+        print("\n" + "="*80)
+        print("📝 ORIGINAL SEED PROMPT:")
+        print("="*80)
+        print(result.original_prompt)
+        print("="*80)
+        
+        print("\n" + "="*80)
+        print("🎯 OPTIMIZED PROMPT:")
+        print("="*80)
         print(result.prompt)
-        print("-" * 30)
+        print("="*80)
+        
+        # Calculate and show improvement metrics
+        if result.original_prompt != result.prompt:
+            print(f"\n PROMPT COMPARISON:")
+            print(f"   Length change: {len(result.prompt) - len(result.original_prompt):+d} characters")
+            print(f"   Length change: {((len(result.prompt) - len(result.original_prompt)) / len(result.original_prompt) * 100):+.1f}%")
+        else:
+            print(f"\n⚠️  No changes detected - optimized prompt is identical to original")
         
         return True
         

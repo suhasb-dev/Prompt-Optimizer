@@ -6,6 +6,9 @@ import time
 import logging
 from typing import Any, Dict, List, Optional, Union
 import asyncio
+import io
+import sys
+from contextlib import redirect_stdout, redirect_stderr
 
 import gepa
 from ..utils.api_keys import APIKeyManager
@@ -62,8 +65,6 @@ class GepaOptimizer:
         model_info = {
             'provider': getattr(model_config, 'provider', 'unknown'),
             'model_name': getattr(model_config, 'model_name', str(model_config)),
-            # 'temperature': getattr(model_config, 'temperature', 'default'),
-            # 'max_tokens': getattr(model_config, 'max_tokens', 'default')
         }
         self.logger.info(f"Initialized model with config: {model_info}")
         
@@ -75,29 +76,8 @@ class GepaOptimizer:
         
         # Validate GEPA availability
         if gepa is None:
-            raise GepaDependencyError("GEPA library is not available. Install with: pip install gepa")
-            
-        # Log configuration summary
-        model_name = (self.config.model.model_name 
-                     if isinstance(self.config.model, ModelConfig) 
-                     else str(self.config.model))
-        provider = (self.config.model.provider 
-                   if isinstance(self.config.model, ModelConfig) 
-                   else 'unknown')
-        
-        self.logger.info(f"Initialized GepaOptimizer with model: {model_name} "
-                        f"(provider: {provider})")
-                        
-        if self.config.reflection_model:
-            ref_model_name = (self.config.reflection_model.model_name 
-                            if isinstance(self.config.reflection_model, ModelConfig)
-                            else str(self.config.reflection_model))
-            ref_provider = (self.config.reflection_model.provider 
-                          if isinstance(self.config.reflection_model, ModelConfig)
-                          else 'unknown')
-            self.logger.info(f"Reflection model: {ref_model_name} "
-                           f"(provider: {ref_provider})")
-    
+            raise GepaDependencyError("GEPA library is not available. Please install it with: pip install gepa")
+
     async def train(self,
                    seed_prompt: str,
                    dataset: Union[List[Any], str, Dict, Any],
@@ -107,29 +87,16 @@ class GepaOptimizer:
         
         Args:
             seed_prompt: Initial prompt to optimize
-            dataset: Training data in ANY format
-            **kwargs: Additional optimization parameters
-                - max_metric_calls: Override for config.max_metric_calls
-                - batch_size: Override for config.batch_size
-                - Any other parameters to override in config
-                
-        Returns:
-            OptimizedResult: Optimization result with optimized prompt
+            dataset: Training data in any format
+            **kwargs: Additional parameters that can override config
             
-        Example:
-            >>> config = OptimizationConfig(
-            ...     model="openai/gpt-4-turbo",
-            ...     reflection_model="anthropic/claude-3-opus",
-            ...     max_iterations=50,
-            ...     max_metric_calls=300,
-            ...     batch_size=8
-            ... )
-            >>> optimizer = GepaOptimizer(config=config)
-            >>> result = await optimizer.train(
-            ...     seed_prompt="You are a helpful assistant",
-            ...     dataset=[{"input": "Hi", "output": "Hello!"}]
-            ... )
-            >>> print(result.prompt)
+        Returns:
+            OptimizedResult: Optimization result with improved prompt
+            
+        Raises:
+            InvalidInputError: For invalid input parameters
+            DatasetError: For issues with dataset processing
+            GepaOptimizerError: For optimization failures
         """
         start_time = time.time()
         session_id = f"opt_{int(start_time)}_{id(self)}"
@@ -176,93 +143,107 @@ class GepaOptimizer:
             )
             
             # Step 6: Create result objects
-            result = OptimizationResult(
-                session_id=session_id,
+            result = OptimizedResult(
                 original_prompt=seed_prompt,
-                optimized_prompt=processed_result['optimized_prompt'],
-                improvement_data=processed_result['metrics'],
+                optimized_prompt=processed_result.get('optimized_prompt', seed_prompt),
+                improvement_data=processed_result.get('improvement_data', {}),
                 optimization_time=optimization_time,
-                dataset_size=len(trainset),
-                status="completed"
+                dataset_size=len(trainset) + len(valset),
+                total_iterations=processed_result.get('total_iterations', 0),
+                status=processed_result.get('status', 'completed'),
+                error_message=processed_result.get('error_message'),
+                detailed_result=OptimizationResult(
+                    session_id=session_id,
+                    original_prompt=seed_prompt,
+                    optimized_prompt=processed_result.get('optimized_prompt', seed_prompt),
+                    improvement_data=processed_result.get('improvement_data', {}),
+                    optimization_time=optimization_time,
+                    dataset_size=len(trainset) + len(valset),
+                    total_iterations=processed_result.get('total_iterations', 0),
+                    status=processed_result.get('status', 'completed'),
+                    error_message=processed_result.get('error_message')
+                )
             )
             
-            print(f"✅ Optimization completed in {optimization_time:.2f}s")
+            self.logger.info(f"✅ Optimization completed in {optimization_time:.2f}s")
+            return result
             
-            # Log improvement if available
-            metrics = processed_result['metrics']
-            if 'improvement_percent' in metrics:
-                improvement = metrics['improvement_percent']
-                print(f"📈 Performance improvement: {improvement:.2f}%")
-            
-            return OptimizedResult(result)
-
-        except (GepaOptimizerError, Exception) as e:
-            # Handle optimization failure gracefully
-            self.logger.error(f"Optimization failed: {str(e)}")
-            print(f"❌ Optimization failed: {str(e)}")
-            
-            # Return failed result with original prompt
+        except Exception as e:
             optimization_time = time.time() - start_time
-            failed_result = OptimizationResult(
-                session_id=session_id,
+            error_msg = f"Optimization failed: {str(e)}"
+            self.logger.error(error_msg)
+            
+            # Return failed result
+            return OptimizedResult(
                 original_prompt=seed_prompt,
                 optimized_prompt=seed_prompt,  # Return original on failure
-                improvement_data={'error': str(e)},
+                improvement_data={'error': error_msg},
                 optimization_time=optimization_time,
                 dataset_size=0,
-                status="failed",
-                error_message=str(e)
+                total_iterations=0,
+                status='failed',
+                error_message=error_msg
             )
-            
-            return OptimizedResult(failed_result)
-    
+
     def _update_config_from_kwargs(self, kwargs: Dict[str, Any]) -> None:
-        """Update config with values from kwargs"""
+        """Update configuration with runtime overrides from kwargs."""
+        updated_params = []
+        
         for key, value in kwargs.items():
             if hasattr(self.config, key):
                 setattr(self.config, key, value)
-                self.logger.debug(f"Updated config.{key} = {value}")
+                updated_params.append(f"{key}={value}")
             else:
-                self.logger.warning(f"Ignoring unknown config parameter: {key}")
-    
+                self.logger.warning(f"Unknown parameter '{key}' ignored")
+        
+        if updated_params:
+            self.logger.info(f"Updated config parameters: {', '.join(updated_params)}")
+
     def _validate_inputs(self, seed_prompt: str) -> None:
         """
-        Validate input parameters
+        Validate input parameters for optimization
         
         Args:
-            seed_prompt: The initial prompt to validate
+            seed_prompt: The seed prompt to validate
             
         Raises:
-            InvalidInputError: If any input is invalid
+            InvalidInputError: If validation fails
         """
         if not seed_prompt or not isinstance(seed_prompt, str):
             raise InvalidInputError("Seed prompt must be a non-empty string")
-            
-        # Validate model configuration
-        if not hasattr(self.config, 'model') or not self.config.model:
-            raise InvalidInputError("Model configuration is required in config")
-            
-        # Validate reflection model if specified
-        if hasattr(self.config, 'reflection_model') and self.config.reflection_model:
-            if not isinstance(self.config.reflection_model, ModelConfig):
-                raise InvalidInputError("Reflection model must be a ModelConfig instance")
         
-        # Log configuration summary
-        self.logger.info("Optimization configuration:")
-        self.logger.info(f"- Model: {self.config.model.model_name} (provider: {self.config.model.provider})")
-        if hasattr(self.config, 'reflection_model') and self.config.reflection_model:
-            self.logger.info(f"- Reflection model: {self.config.reflection_model.model_name} (provider: {self.config.reflection_model.provider}")
-        self.logger.info(f"- Max iterations: {self.config.max_iterations}")
-        self.logger.info(f"- Max metric calls: {self.config.max_metric_calls}")
-        self.logger.info(f"- Batch size: {self.config.batch_size}")
-    
+        if len(seed_prompt.strip()) < 10:
+            raise InvalidInputError("Seed prompt is too short (minimum 10 characters)")
+        
+        # Validate model configuration
+        model_config = self.config.model
+        if not hasattr(model_config, 'model_name') or not model_config.model_name:
+            raise InvalidInputError("Model name is required")
+        
+        reflection_config = self.config.reflection_model
+        if not hasattr(reflection_config, 'model_name') or not reflection_config.model_name:
+            raise InvalidInputError("Reflection model name is required")
+
+    def _validate_models(self, task_lm, reflection_lm):
+        """Validate if specified models are supported."""
+        supported_prefixes = ['openai/', 'anthropic/', 'gpt', 'claude', 'llama', 'mistral', 'cohere', 'ai21']
+        
+        task_model_str = str(task_lm).lower()
+        reflection_model_str = str(reflection_lm).lower()
+        
+        task_supported = any(task_model_str.startswith(prefix) for prefix in supported_prefixes)
+        reflection_supported = any(reflection_model_str.startswith(prefix) for prefix in supported_prefixes)
+        
+        if not task_supported:
+            self.logger.warning(f"Task model '{task_lm}' may not be supported")
+        if not reflection_supported:
+            self.logger.warning(f"Reflection model '{reflection_lm}' may not be supported")
+
     def _create_seed_candidate(self, seed_prompt: str) -> Dict[str, str]:
-        """Create GEPA-compatible seed candidate"""
+        """Create a seed candidate from the input prompt."""
         sanitized_prompt = sanitize_prompt(seed_prompt)
-        return {
-            'system_prompt': sanitized_prompt
-        }
-    
+        return {'system_prompt': sanitized_prompt}
+
     async def _run_gepa_optimization(self, adapter: CustomGepaAdapter, seed_candidate: Any, trainset: List[Any], valset: List[Any], **kwargs) -> Dict[str, Any]:
         """
         Run GEPA optimization with the given adapter and data
@@ -359,14 +340,60 @@ class GepaOptimizer:
                 **kwargs
             }
             
+            # 🎯 NEW: Capture GEPA's internal logging for pareto front information
+            gepa_output = io.StringIO()
+            
             # Run GEPA optimization (synchronous call wrapped in async)
             result = await asyncio.get_event_loop().run_in_executor(
                 None, 
-                lambda: gepa.optimize(**gepa_params)
+                lambda: self._run_gepa_with_logging(gepa_params, gepa_output)
             )
+            
+            # 🎯 NEW: Process and log pareto front information
+            gepa_logs = gepa_output.getvalue()
+            self._log_pareto_front_info(gepa_logs)
+            
             return result
         except Exception as e:
-            raise GepaOptimizerError(f"GEPA optimization failed: {str(e)}")
+            # Try to extract partial results before failing
+            self.logger.warning(f"GEPA optimization failed: {e}")
+            
+            # Check if we have any cached results from the adapter
+            best_candidate = adapter.get_best_candidate()
+            best_score = adapter.get_best_score()
+            
+            if best_candidate and best_score > 0:
+                self.logger.info(f"🎯 Using cached best result with score: {best_score:.4f}")
+                
+                # Create a mock GEPA result with the best candidate found
+                return {
+                    'best_candidate': best_candidate,
+                    'best_score': best_score,
+                    'partial_result': True,
+                    'error': f'GEPA failed but returning best result found: {str(e)}'
+                }
+            else:
+                # If no cached results, re-raise the error
+                raise GepaOptimizerError(f"GEPA optimization failed: {str(e)}")
+    
+    def _run_gepa_with_logging(self, gepa_params: Dict[str, Any], output_buffer: io.StringIO) -> Any:
+        """Run GEPA optimization while capturing its output."""
+        # Capture GEPA's print statements and logging
+        with redirect_stdout(output_buffer), redirect_stderr(output_buffer):
+            return gepa.optimize(**gepa_params)
+    
+    def _log_pareto_front_info(self, gepa_logs: str) -> None:
+        """Extract and log pareto front information from GEPA logs."""
+        lines = gepa_logs.split('\n')
+        
+        for line in lines:
+            # Look for pareto front information
+            if 'pareto front' in line.lower() or 'new program' in line.lower():
+                self.logger.info(f"🎯 GEPA: {line.strip()}")
+            elif 'iteration' in line.lower() and ('score' in line.lower() or 'program' in line.lower()):
+                self.logger.info(f" GEPA: {line.strip()}")
+            elif 'best' in line.lower() and 'score' in line.lower():
+                self.logger.info(f"🏆 GEPA: {line.strip()}")
     
     def optimize_sync(self,
                      model: str,
@@ -411,91 +438,29 @@ def optimize_prompt(
     **kwargs
 ) -> OptimizedResult:
     """
-    Convenience function for quick prompt optimization
+    Convenience function for quick prompt optimization without creating optimizer instance
     
     Args:
-        model: Target model to optimize for (can be string or ModelConfig)
+        model: Target model configuration
         seed_prompt: Initial prompt to optimize
-        dataset: Training data in any format
-        reflection_model: Optional model for reflection (can be string or ModelConfig)
+        dataset: Training data
+        reflection_model: Model for reflection (optional)
         **kwargs: Additional optimization parameters
-            - max_iterations: Maximum number of optimization iterations
-            - max_metric_calls: Maximum number of metric evaluations
-            - batch_size: Batch size for evaluation
-            - Any other OptimizationConfig parameters
-            
-    Returns:
-        OptimizedResult: Optimized prompt result
         
-    Example:
-        >>> result = optimize_prompt(
-        ...     model="openai/gpt-4-turbo",
-        ...     seed_prompt="You are a helpful assistant",
-        ...     dataset=[{"input": "Hi", "output": "Hello!"}],
-        ...     reflection_model="anthropic/claude-3-opus",
-        ...     max_iterations=50
-        ... )
+    Returns:
+        OptimizedResult: Optimization result
     """
-    # Create model configurations if strings are provided
-    if isinstance(model, str):
-        model = ModelConfig(model_name=model)
-    if isinstance(reflection_model, str):
-        reflection_model = ModelConfig(model_name=reflection_model)
+    # Create default config if not provided
+    if reflection_model is None:
+        reflection_model = model
     
-    # Create configuration with provided parameters
     config = OptimizationConfig(
         model=model,
         reflection_model=reflection_model,
-        **{k: v for k, v in kwargs.items() 
-           if hasattr(OptimizationConfig, k) or k in ['max_iterations', 'max_metric_calls', 'batch_size']}
+        max_iterations=kwargs.get('max_iterations', 10),
+        max_metric_calls=kwargs.get('max_metric_calls', 50),
+        batch_size=kwargs.get('batch_size', 4)
     )
     
-    # Filter out config parameters from kwargs
-    train_kwargs = {k: v for k, v in kwargs.items() 
-                   if not (hasattr(OptimizationConfig, k) or k in ['max_iterations', 'max_metric_calls', 'batch_size'])}
-    
-    # Create optimizer and run training
     optimizer = GepaOptimizer(config=config)
-    return optimizer.train(
-        seed_prompt=seed_prompt,
-        dataset=dataset,
-        **train_kwargs
-    )
-
-
-def optimize_prompt_sync(
-    model: Union[str, ModelConfig],
-    seed_prompt: str,
-    dataset: Any,
-    reflection_model: Optional[Union[str, ModelConfig]] = None,
-    **kwargs
-) -> OptimizedResult:
-    """
-    Synchronous convenience function for quick prompt optimization
-    
-    Args:
-        model: Target model to optimize for (can be string or ModelConfig)
-        seed_prompt: Initial prompt to optimize
-        dataset: Training data in any format
-        reflection_model: Optional model for reflection (can be string or ModelConfig)
-        **kwargs: Additional optimization parameters
-            - max_iterations: Maximum number of optimization iterations
-            - max_metric_calls: Maximum number of metric evaluations
-            - batch_size: Batch size for evaluation
-            - Any other OptimizationConfig parameters
-            
-    Returns:
-        OptimizedResult: Optimized prompt result
-        
-    Example:
-        >>> result = optimize_prompt_sync(
-        ...     model="openai/gpt-4-turbo",
-        ...     seed_prompt="You are a helpful assistant",
-        ...     dataset=[{"input": "Hi", "output": "Hello!"}],
-        ...     reflection_model="anthropic/claude-3-opus"
-        ... )
-    """
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
-        optimize_prompt(model, seed_prompt, dataset, reflection_model, **kwargs)
-    )
+    return asyncio.run(optimizer.train(seed_prompt, dataset, **kwargs))

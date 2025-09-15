@@ -59,8 +59,51 @@ class OptimizedResult:
     User-facing result class that provides clean interface
     """
     
-    def __init__(self, result: OptimizationResult):
-        self._result = result
+    def __init__(self, 
+                 original_prompt: str = "",
+                 optimized_prompt: str = "",
+                 improvement_data: Dict[str, Any] = None,
+                 optimization_time: float = 0.0,
+                 dataset_size: int = 0,
+                 total_iterations: int = 0,
+                 status: str = "pending",
+                 error_message: Optional[str] = None,
+                 detailed_result: Optional[OptimizationResult] = None,
+                 session_id: Optional[str] = None):
+        """
+        Initialize OptimizedResult with individual parameters
+        
+        Args:
+            original_prompt: Original seed prompt
+            optimized_prompt: Optimized prompt
+            improvement_data: Performance improvement data
+            optimization_time: Time taken for optimization
+            dataset_size: Size of dataset used
+            total_iterations: Number of optimization iterations
+            status: Optimization status
+            error_message: Error message if failed
+            detailed_result: Optional detailed OptimizationResult
+            session_id: Optional session ID
+        """
+        if improvement_data is None:
+            improvement_data = {}
+            
+        # Create internal OptimizationResult
+        self._result = OptimizationResult(
+            session_id=session_id or str(uuid.uuid4()),
+            original_prompt=original_prompt,
+            optimized_prompt=optimized_prompt,
+            improvement_data=improvement_data,
+            optimization_time=optimization_time,
+            dataset_size=dataset_size,
+            total_iterations=total_iterations,
+            status=status,
+            error_message=error_message
+        )
+        
+        # If detailed_result is provided, use it instead
+        if detailed_result is not None:
+            self._result = detailed_result
     
     @property
     def prompt(self) -> str:

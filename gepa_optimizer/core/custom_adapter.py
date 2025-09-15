@@ -48,84 +48,69 @@ class CustomGepaAdapter(GEPAAdapter):
         
         self.ui_tree_evaluator = UITreeEvaluator(metric_weights=metric_weights)
         self.logger.info(f"🚀 Initialized VisionLLMClient with {model_config.provider}/{model_config.model_name}")
+        
+        # Cache the best candidate found so far
+        self._last_best_candidate = None
+        self._last_best_score = 0.0
 
     def _parse_json_safely(self, json_str: str) -> Dict[str, Any]:
         """Safely parse JSON string to dictionary with enhanced parsing and repair."""
+        if not json_str or not isinstance(json_str, str):
+            return {}
+        
+        # Try direct parsing first
         try:
-            if isinstance(json_str, dict):
-                return json_str
-            if isinstance(json_str, str):
-                json_str = json_str.strip()
-                
-                # Remove markdown code blocks
-                if json_str.startswith('```json'):
-                    json_str = json_str[7:]
-                if json_str.startswith('```'):
-                    json_str = json_str[3:]
-                if json_str.endswith('```'):
-                    json_str = json_str[:-3]
-                json_str = json_str.strip()
-                
-                # Try to find JSON within the text if it's embedded
-                if '{' in json_str and '}' in json_str:
-                    start = json_str.find('{')
-                    end = json_str.rfind('}') + 1
-                    json_str = json_str[start:end]
-                
-                # Try to parse as-is first
-                try:
-                    return json.loads(json_str)
-                except json.JSONDecodeError as e:
-                    # Attempt JSON repair for common issues
-                    repaired_json = self._repair_json(json_str)
-                    if repaired_json:
-                        return json.loads(repaired_json)
-                    else:
-                        raise e
-                        
-            return {}
-        except (json.JSONDecodeError, TypeError, ValueError) as e:
-            self.logger.warning(f"⚠️  JSON parsing failed: {e}")
-            self.logger.debug(f"🔍 Raw LLM output (first 500 chars): {json_str[:500]}")
-            self.logger.debug(f"🔍 Raw LLM output (last 200 chars): {json_str[-200:]}")
-            return {}
-    
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+        
+        # Try to extract JSON from markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', json_str, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(1))
+            except json.JSONDecodeError:
+                pass
+        
+        # Try to find JSON object in the string
+        json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(0))
+            except json.JSONDecodeError:
+                pass
+        
+        # Try repair and parse
+        repaired_json = self._repair_json(json_str)
+        if repaired_json:
+            try:
+                return json.loads(repaired_json)
+            except json.JSONDecodeError:
+                pass
+        
+        self.logger.warning(f"Failed to parse JSON: {json_str[:100]}...")
+        return {}
+
     def _repair_json(self, json_str: str) -> str:
-        """Attempt to repair common JSON formatting issues."""
+        """Attempt to repair common JSON issues."""
         try:
-            # Remove any trailing text after the last }
-            if '}' in json_str:
-                last_brace = json_str.rfind('}')
-                json_str = json_str[:last_brace + 1]
+            # Remove markdown formatting
+            json_str = re.sub(r'```(?:json)?\s*', '', json_str)
+            json_str = re.sub(r'```\s*$', '', json_str)
+            
+            # Remove extra text before/after JSON
+            json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
             
             # Fix common issues
+            json_str = re.sub(r',\s*}', '}', json_str)  # Remove trailing commas
+            json_str = re.sub(r',\s*]', ']', json_str)  # Remove trailing commas in arrays
+            json_str = re.sub(r'([{,]\s*)(\w+):', r'\1"\2":', json_str)  # Quote unquoted keys
             
-            # Fix unquoted property names (basic cases)
-            # This regex is more careful to avoid double-quoting already quoted properties
-            json_str = re.sub(r'(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', json_str)
-            
-            # Fix single quotes to double quotes
-            json_str = json_str.replace("'", '"')
-            
-            # Try to close incomplete JSON structures
-            open_braces = json_str.count('{')
-            close_braces = json_str.count('}')
-            if open_braces > close_braces:
-                json_str += '}' * (open_braces - close_braces)
-            
-            # Try to close incomplete arrays
-            open_brackets = json_str.count('[')
-            close_brackets = json_str.count(']')
-            if open_brackets > close_brackets:
-                json_str += ']' * (open_brackets - close_brackets)
-            
-            # Test if the repaired JSON is valid
-            json.loads(json_str)
-            self.logger.info(f"🔧 Successfully repaired malformed JSON")
             return json_str
-            
-        except (json.JSONDecodeError, Exception) as e:
-            self.logger.debug(f"🔧 JSON repair failed: {e}")
+        except Exception as e:
+            self.logger.warning(f"🔧 JSON repair failed: {e}")
             return ""
 
     def evaluate(
@@ -159,13 +144,9 @@ class CustomGepaAdapter(GEPAAdapter):
             else:
                 llm_output_json_str = str(llm_response) if llm_response else ""
             
-            # 🔍 DEBUG: Log what the LLM actually returned
-            self.logger.info(f"🔍 Sample {i+1} - LLM Response Type: {type(llm_response)}")
-            self.logger.info(f"🔍 Sample {i+1} - LLM Response Keys: {list(llm_response.keys()) if isinstance(llm_response, dict) else 'Not a dict'}")
-            self.logger.info(f"🔍 Sample {i+1} - LLM Content Length: {len(llm_output_json_str)}")
-            self.logger.info(f"🔍 Sample {i+1} - LLM Content (first 300 chars): {llm_output_json_str[:300]}")
-            if len(llm_output_json_str) > 500:
-                self.logger.info(f"🔍 Sample {i+1} - LLM Content (last 200 chars): {llm_output_json_str[-200:]}")
+            # 🔍 DEBUG: Log essential info only (removed verbose JSON content)
+            self.logger.debug(f"🔍 Sample {i+1} - LLM Response Type: {type(llm_response)}")
+            self.logger.debug(f"🔍 Sample {i+1} - Response Length: {len(llm_output_json_str)} chars")
             
             outputs.append(llm_output_json_str)
 
@@ -193,13 +174,11 @@ class CustomGepaAdapter(GEPAAdapter):
                 evaluation_results = {k: 0.05 for k in evaluation_results.keys()}
                 self.logger.warning(f"⚠️  Sample {i+1}: Incomplete results - using low score: {composite_score}")
             else:
-                logger.info(f"LLM Output: {llm_output_dict}")
-                logger.info(f"Ground Truth: {ground_truth_dict}")
                 # Calculate score using UITreeEvaluator with parsed dictionaries
                 evaluation_results = self.ui_tree_evaluator.evaluate(llm_output_dict, ground_truth_dict)
                 composite_score = evaluation_results["composite_score"]
                 
-                # Clean, readable logging
+                # Clean, readable logging (removed verbose JSON dumps)
                 llm_children = len(llm_output_dict.get('children', []))
                 gt_children = len(ground_truth_dict.get('children', []))
                 
@@ -221,6 +200,13 @@ class CustomGepaAdapter(GEPAAdapter):
                 })
 
         avg_score = sum(scores) / len(scores) if scores else 0.0
+        
+        # Cache the best candidate found so far
+        if avg_score > self._last_best_score:
+            self._last_best_score = avg_score
+            self._last_best_candidate = candidate.copy()  # Make a copy to avoid reference issues
+            self.logger.info(f"🎯 New best candidate found with score: {avg_score:.4f}")
+        
         self.logger.info(f"📈 Batch evaluation complete - Average score: {avg_score:.4f}")
 
         return EvaluationBatch(outputs=outputs, scores=scores, trajectories=trajectories)
@@ -234,6 +220,9 @@ class CustomGepaAdapter(GEPAAdapter):
         """Create a reflective dataset from the evaluation results."""
         reflective_dataset = {}
         system_prompt = candidate.get('system_prompt', '')
+
+        # 🎯 NEW: Log the proposed new prompt being evaluated
+        self.logger.info(f"📝 Creating reflection dataset for prompt: '{system_prompt[:100]}...'")
 
         for component in components_to_update:
             reflective_dataset[component] = []
@@ -249,32 +238,50 @@ class CustomGepaAdapter(GEPAAdapter):
                     "feedback": feedback,
                     "detailed_scores": trace['evaluation_results']
                 })
-        
-        self.logger.info(f"�� Created reflective dataset with {len(eval_batch.trajectories)} samples")
+
+        # 🎯 NEW: Log reflection dataset summary
+        total_samples = sum(len(data) for data in reflective_dataset.values())
+        avg_score = sum(trace['score'] for data in reflective_dataset.values() for trace in data) / total_samples if total_samples > 0 else 0.0
+        self.logger.info(f"📝 Reflection dataset created - {total_samples} samples, avg score: {avg_score:.4f}")
+
         return reflective_dataset
 
     def _generate_feedback(self, evaluation_results: Dict[str, float]) -> str:
-        """Generates textual feedback based on detailed evaluation results."""
-        feedback_parts = []
+        """Generate textual feedback based on evaluation results."""
         composite_score = evaluation_results.get("composite_score", 0.0)
-
-        if composite_score < 0.5:
-            feedback_parts.append("The overall quality is low. Focus on fundamental accuracy.")
-        elif composite_score < 0.8:
-            feedback_parts.append("The overall quality is moderate. Aim for higher precision.")
+        
+        feedback_parts = []
+        
+        # Overall quality assessment
+        if composite_score >= 0.8:
+            feedback_parts.append("The overall quality is good.")
+        elif composite_score >= 0.5:
+            feedback_parts.append("The overall quality is moderate.")
         else:
-            feedback_parts.append("The overall quality is good. Refine for perfection.")
-
-        # Add specific feedback based on individual metric scores
-        if evaluation_results.get("element_completeness", 1.0) < 0.7:
+            feedback_parts.append("The overall quality is low. Focus on fundamental accuracy.")
+        
+        # Specific metric feedback
+        if evaluation_results.get("element_completeness", 0.0) < 0.7:
             feedback_parts.append("Element completeness is low. Ensure all UI elements are captured.")
-        if evaluation_results.get("element_type_accuracy", 1.0) < 0.7:
+        
+        if evaluation_results.get("element_type_accuracy", 0.0) < 0.7:
             feedback_parts.append("Element type accuracy is low. Verify correct UI element identification (Button, Text, Image, etc.).")
-        if evaluation_results.get("text_content_accuracy", 1.0) < 0.7:
+        
+        if evaluation_results.get("text_content_accuracy", 0.0) < 0.7:
             feedback_parts.append("Text content accuracy is low. Improve text extraction fidelity.")
-        if evaluation_results.get("hierarchy_accuracy", 1.0) < 0.7:
+        
+        if evaluation_results.get("hierarchy_accuracy", 0.0) < 0.7:
             feedback_parts.append("Hierarchy accuracy is low. Ensure correct parent-child relationships.")
-        if evaluation_results.get("style_accuracy", 1.0) < 0.7:
+        
+        if evaluation_results.get("style_accuracy", 0.0) < 0.7:
             feedback_parts.append("Style accuracy is low. Capture more styling properties (colors, sizes, positioning).")
-
+        
         return " ".join(feedback_parts)
+    
+    def get_best_candidate(self) -> Optional[Dict[str, str]]:
+        """Get the best candidate found so far."""
+        return self._last_best_candidate
+    
+    def get_best_score(self) -> float:
+        """Get the best score found so far."""
+        return self._last_best_score

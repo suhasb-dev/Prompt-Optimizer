@@ -31,43 +31,6 @@ pip install gepa-optimizer
 
 ### Basic Usage
 
-```python
-import asyncio
-from gepa_optimizer import GepaOptimizer, OptimizationConfig
-
-async def optimize_prompt():
-    # Configure your optimization
-    config = OptimizationConfig(
-        model="openai/gpt-4o",                    # Your target model
-        reflection_model="openai/gpt-4o",         # Model for self-reflection
-        max_iterations=10,                        # Budget: optimization rounds
-        max_metric_calls=50,                      # Budget: evaluation calls
-        batch_size=4                              # Batch size for evaluation
-    )
-    
-    # Initialize optimizer
-    optimizer = GepaOptimizer(config=config)
-    
-    # Your training data
-    dataset = [
-        {"input": "What is artificial intelligence?", "output": "AI is a field of computer science..."},
-        {"input": "Explain machine learning", "output": "Machine learning is a subset of AI..."},
-        {"input": "What are neural networks?", "output": "Neural networks are computing systems..."}
-    ]
-    
-    # Optimize your prompt
-    result = await optimizer.train(
-        seed_prompt="You are a helpful AI assistant that explains technical concepts clearly.",
-        dataset=dataset
-    )
-    
-    print(f"✅ Optimization completed!")
-    print(f"📈 Performance improvement: {result.improvement_percent:.2f}%")
-    print(f"🎯 Optimized prompt: {result.prompt}")
-    print(f"⏱️ Time taken: {result.optimization_time:.2f}s")
-
-# Run the optimization
-asyncio.run(optimize_prompt())
 ```
 
 ### UI Tree Extraction (Vision Models)
@@ -297,14 +260,7 @@ gepa-optimizer/
 - **👁️ Multi-modal Applications**: Vision + text prompt optimization
 - **🎯 Domain-Specific Tasks**: Fine-tune prompts for specialized domains
 
-## 📊 Performance & Benchmarks
 
-| Model | Dataset Size | Improvement | Time (min) | Cost (USD) |
-|-------|-------------|-------------|------------|------------|
-| GPT-4o | 100 samples | +23.5% | 12 | $15.20 |
-| Claude-3 | 100 samples | +19.2% | 15 | $18.50 |
-| GPT-3.5 | 100 samples | +15.8% | 8 | $3.40 |
-| Gemini-1.5 | 100 samples | +21.1% | 10 | $12.80 |
 
 *Benchmarks run on standard text classification tasks with UI tree extraction*
 
