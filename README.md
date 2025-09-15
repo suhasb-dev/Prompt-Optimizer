@@ -222,16 +222,7 @@ gepa-optimizer/
 - **👁️ Multi-modal Applications**: Vision + text prompt optimization
 - **🎯 Domain-Specific Tasks**: Fine-tune prompts for specialized domains
 
-## 📊 Performance & Benchmarks
 
-| Model | Dataset Size | Improvement | Time (min) | Cost (USD) |
-|-------|-------------|-------------|------------|------------|
-| GPT-4o | 100 samples | +23.5% | 12 | $15.20 |
-| Claude-3 | 100 samples | +19.2% | 15 | $18.50 |
-| GPT-3.5 | 100 samples | +15.8% | 8 | $3.40 |
-| Gemini-1.5 | 100 samples | +21.1% | 10 | $12.80 |
-
-*Benchmarks run on standard text classification tasks with UI tree extraction*
 
 ## 🔒 Security & Privacy
 
@@ -284,6 +275,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by the GEPA Optimizer team**
-
-*Empowering developers to create better AI applications through intelligent prompt optimization.*
+**Made with ❤️
