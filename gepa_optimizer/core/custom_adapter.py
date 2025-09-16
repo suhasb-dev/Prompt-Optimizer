@@ -13,18 +13,17 @@ from ..models import ModelConfig
 from gepa.core.adapter import GEPAAdapter, EvaluationBatch
 from ..llms.vision_llm import VisionLLMClient
 from ..evaluation.ui_evaluator import UITreeEvaluator
+from .base_adapter import BaseGepaAdapter
 
 logger = logging.getLogger(__name__)
 
-class CustomGepaAdapter(GEPAAdapter):
+class CustomGepaAdapter(BaseGepaAdapter):
     """
     Custom adapter for the GEPA Universal Prompt Optimizer.
     """
 
     def __init__(self, model_config: 'ModelConfig', metric_weights: Optional[Dict[str, float]] = None):
         """Initialize the custom GEPA adapter with model configuration."""
-        self.logger = logging.getLogger(__name__)
-        
         # Convert string model to ModelConfig if needed
         if not isinstance(model_config, ModelConfig):
             model_config = ModelConfig(
@@ -33,8 +32,8 @@ class CustomGepaAdapter(GEPAAdapter):
                 api_key=None
             )
         
-        # Initialize the vision LLM client
-        self.vision_llm_client = VisionLLMClient(
+        # Initialize components
+        llm_client = VisionLLMClient(
             provider=model_config.provider,
             model_name=model_config.model_name,
             api_key=model_config.api_key,
@@ -46,12 +45,16 @@ class CustomGepaAdapter(GEPAAdapter):
             presence_penalty=model_config.presence_penalty
         )
         
-        self.ui_tree_evaluator = UITreeEvaluator(metric_weights=metric_weights)
-        self.logger.info(f"🚀 Initialized VisionLLMClient with {model_config.provider}/{model_config.model_name}")
+        evaluator = UITreeEvaluator(metric_weights=metric_weights)
         
-        # Cache the best candidate found so far
-        self._last_best_candidate = None
-        self._last_best_score = 0.0
+        # Initialize parent class
+        super().__init__(llm_client, evaluator)
+        
+        # Track candidates for logging
+        self._last_candidate = None
+        self._evaluation_count = 0
+        
+        self.logger.info(f"🚀 Initialized UI Tree adapter with {model_config.provider}/{model_config.model_name}")
 
     def _parse_json_safely(self, json_str: str) -> Dict[str, Any]:
         """Safely parse JSON string to dictionary with enhanced parsing and repair."""
@@ -126,6 +129,12 @@ class CustomGepaAdapter(GEPAAdapter):
 
         system_prompt = candidate.get('system_prompt', '')
 
+        # Check if this is a new candidate (different from last one)
+        if self._last_candidate != system_prompt:
+            self._evaluation_count += 1
+            self.log_proposed_candidate(candidate, self._evaluation_count)
+            self._last_candidate = system_prompt
+
         self.logger.info(f"📊 Evaluating {len(batch)} samples with prompt: '{system_prompt[:50]}...'")
 
         for i, item in enumerate(batch):
@@ -133,8 +142,8 @@ class CustomGepaAdapter(GEPAAdapter):
             image_base64 = item.get('image', '')
             ground_truth_json = item.get('output', '')
 
-            # Call the VisionLLMClient
-            llm_response = self.vision_llm_client.generate(system_prompt, input_text, image_base64)
+            # Call the LLM client
+            llm_response = self.llm_client.generate(system_prompt, input_text, image_base64=image_base64)
             
             # Extract content from the response dictionary
             if isinstance(llm_response, dict):
@@ -174,8 +183,8 @@ class CustomGepaAdapter(GEPAAdapter):
                 evaluation_results = {k: 0.05 for k in evaluation_results.keys()}
                 self.logger.warning(f"⚠️  Sample {i+1}: Incomplete results - using low score: {composite_score}")
             else:
-                # Calculate score using UITreeEvaluator with parsed dictionaries
-                evaluation_results = self.ui_tree_evaluator.evaluate(llm_output_dict, ground_truth_dict)
+                # Calculate score using evaluator with parsed dictionaries
+                evaluation_results = self.evaluator.evaluate(llm_output_dict, ground_truth_dict)
                 composite_score = evaluation_results["composite_score"]
                 
                 # Clean, readable logging (removed verbose JSON dumps)
@@ -201,10 +210,10 @@ class CustomGepaAdapter(GEPAAdapter):
 
         avg_score = sum(scores) / len(scores) if scores else 0.0
         
-        # Cache the best candidate found so far
-        if avg_score > self._last_best_score:
-            self._last_best_score = avg_score
-            self._last_best_candidate = candidate.copy()  # Make a copy to avoid reference issues
+        # Update performance tracking (handled by parent class)
+        if avg_score > self._best_score:
+            self._best_score = avg_score
+            self._best_candidate = candidate.copy()
             self.logger.info(f"🎯 New best candidate found with score: {avg_score:.4f}")
         
         self.logger.info(f"📈 Batch evaluation complete - Average score: {avg_score:.4f}")
@@ -223,6 +232,9 @@ class CustomGepaAdapter(GEPAAdapter):
 
         # 🎯 NEW: Log the proposed new prompt being evaluated
         self.logger.info(f"📝 Creating reflection dataset for prompt: '{system_prompt[:100]}...'")
+        
+        # Pretty print reflection dataset creation
+        self._log_reflection_dataset_creation(candidate, eval_batch, components_to_update)
 
         for component in components_to_update:
             reflective_dataset[component] = []
@@ -280,8 +292,98 @@ class CustomGepaAdapter(GEPAAdapter):
     
     def get_best_candidate(self) -> Optional[Dict[str, str]]:
         """Get the best candidate found so far."""
-        return self._last_best_candidate
+        return self._best_candidate
     
     def get_best_score(self) -> float:
         """Get the best score found so far."""
-        return self._last_best_score
+        return self._best_score
+    
+    def log_proposed_candidate(self, candidate: Dict[str, str], iteration: int = 0):
+        """
+        Pretty print the new proposed candidate prompt.
+        
+        Args:
+            candidate: The new candidate prompt from GEPA
+            iteration: Current optimization iteration
+        """
+        system_prompt = candidate.get('system_prompt', '')
+        
+        print("\n" + "="*80)
+        print(f"🚀 NEW PROPOSED CANDIDATE (Iteration {iteration})")
+        print("="*80)
+        print(f"\n📝 PROPOSED PROMPT:")
+        print("-" * 40)
+        print(f'"{system_prompt}"')
+        print("-" * 40)
+        print(f"📊 Prompt Length: {len(system_prompt)} characters")
+        print(f"📊 Word Count: {len(system_prompt.split())} words")
+        print("="*80)
+    
+    def _log_reflection_dataset_creation(self, candidate: Dict[str, str], eval_batch: EvaluationBatch, 
+                                       components_to_update: List[str]):
+        """
+        Pretty print the reflection dataset creation process.
+        
+        Args:
+            candidate: Current candidate being evaluated
+            eval_batch: Evaluation results
+            components_to_update: Components being updated
+        """
+        system_prompt = candidate.get('system_prompt', '')
+        
+        print("\n" + "="*80)
+        print("🔍 REFLECTION DATASET CREATION")
+        print("="*80)
+        
+        print(f"\n📋 CURRENT PROMPT BEING ANALYZED:")
+        print("-" * 40)
+        print(f'"{system_prompt}"')
+        print("-" * 40)
+        
+        print(f"\n📊 EVALUATION SUMMARY:")
+        print("-" * 40)
+        if eval_batch.scores:
+            avg_score = sum(eval_batch.scores) / len(eval_batch.scores)
+            min_score = min(eval_batch.scores)
+            max_score = max(eval_batch.scores)
+            print(f"   • Average Score: {avg_score:.4f}")
+            print(f"   • Min Score: {min_score:.4f}")
+            print(f"   • Max Score: {max_score:.4f}")
+            print(f"   • Total Samples: {len(eval_batch.scores)}")
+        
+        print(f"\n🎯 COMPONENTS TO UPDATE:")
+        print("-" * 40)
+        for i, component in enumerate(components_to_update, 1):
+            print(f"   {i}. {component}")
+        
+        if eval_batch.trajectories:
+            print(f"\n🔍 DETAILED ANALYSIS:")
+            print("-" * 40)
+            for i, trace in enumerate(eval_batch.trajectories[:3], 1):  # Show first 3 samples
+                evaluation_results = trace['evaluation_results']
+                composite_score = evaluation_results.get("composite_score", 0.0)
+                
+                print(f"\n   📝 Sample {i} (Score: {composite_score:.4f}):")
+                
+                # Show input data (truncated)
+                input_text = trace['input_text'][:100] + "..." if len(trace['input_text']) > 100 else trace['input_text']
+                print(f"      Input: \"{input_text}\"")
+                
+                # Show predicted output (truncated)
+                predicted_output = trace['llm_output_json'][:100] + "..." if len(trace['llm_output_json']) > 100 else trace['llm_output_json']
+                print(f"      Output: \"{predicted_output}\"")
+                
+                # Show detailed scores
+                print(f"      Detailed Scores:")
+                for metric, score in evaluation_results.items():
+                    if metric != "composite_score":
+                        print(f"        • {metric.replace('_', ' ').title()}: {score:.4f}")
+                
+                # Show generated feedback
+                feedback = self._generate_feedback(evaluation_results)
+                print(f"      Feedback: \"{feedback}\"")
+            
+            if len(eval_batch.trajectories) > 3:
+                print(f"\n   ... and {len(eval_batch.trajectories) - 3} more samples")
+        
+        print("="*80)

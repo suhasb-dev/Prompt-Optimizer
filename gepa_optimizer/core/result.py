@@ -121,7 +121,7 @@ class ResultProcessor:
         return history
     
     @staticmethod
-    def process_full_result(result: Any, original_prompt: str, optimization_time: float) -> Dict[str, Any]:
+    def process_full_result(result: Any, original_prompt: str, optimization_time: float, actual_iterations: Optional[int] = None) -> Dict[str, Any]:
         """
         Process complete GEPA result into structured format
         
@@ -129,15 +129,39 @@ class ResultProcessor:
             result: Raw GEPA optimization result
             original_prompt: Original seed prompt
             optimization_time: Time taken for optimization
+            actual_iterations: Actual number of iterations from GEPA logs (optional)
             
         Returns:
             Dict[str, Any]: Complete processed result
         """
+        # Extract metrics first
+        metrics = ResultProcessor.extract_metrics(result)
+        
+        # Extract iterations from GEPA result
+        total_iterations = 0
+        try:
+            # First priority: use actual_iterations if provided (from logs)
+            if actual_iterations is not None:
+                total_iterations = actual_iterations
+            elif hasattr(result, 'iterations'):
+                total_iterations = int(result.iterations)
+            elif hasattr(result, 'num_iterations'):
+                total_iterations = int(result.num_iterations)
+            elif hasattr(result, 'optimization_history'):
+                total_iterations = len(result.optimization_history)
+            # Check if it's in metrics
+            elif 'iterations' in metrics:
+                total_iterations = metrics['iterations']
+        except Exception as e:
+            logger.warning(f"Failed to extract iterations: {e}")
+        
         return {
             'original_prompt': original_prompt,
             'optimized_prompt': ResultProcessor.extract_optimized_prompt(result),
-            'metrics': ResultProcessor.extract_metrics(result),
+            'metrics': metrics,
             'reflection_history': ResultProcessor.extract_reflection_history(result),
             'optimization_time': optimization_time,
+            'total_iterations': total_iterations,
+            'status': 'completed',
             'raw_result': result  # Keep raw result for advanced users
         }

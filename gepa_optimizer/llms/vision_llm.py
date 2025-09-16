@@ -16,6 +16,8 @@ from ..utils.api_keys import APIKeyManager
 if TYPE_CHECKING:
     from ..models.config import ModelConfig
 
+from .base_llm import BaseLLMClient
+
 class ProviderType(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
@@ -48,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
-class VisionLLMClient:
+class VisionLLMClient(BaseLLMClient):
     """
     A client for interacting with multi-modal Vision LLMs (e.g., OpenAI GPT-4 Vision).
     
@@ -101,6 +103,28 @@ class VisionLLMClient:
             frequency_penalty: Penalizes repeated tokens.
             presence_penalty: Penalizes new tokens based on their presence in the text so far.
         """
+        # Initialize parent class
+        super().__init__(provider=str(provider), model_name=model_name, **{
+            'api_key': api_key,
+            'base_url': base_url,
+            'temperature': temperature,
+            'max_tokens': max_tokens,
+            'top_p': top_p,
+            'frequency_penalty': frequency_penalty,
+            'presence_penalty': presence_penalty,
+            'timeout': timeout,
+            'max_retries': max_retries
+        })
+        
+        # Initialize the actual client
+        self._initialize_client(provider, model_name, api_key, base_url, temperature, 
+                              max_tokens, top_p, frequency_penalty, presence_penalty, 
+                              timeout, max_retries)
+    
+    def _initialize_client(self, provider, model_name, api_key, base_url, temperature, 
+                          max_tokens, top_p, frequency_penalty, presence_penalty, 
+                          timeout, max_retries):
+        """Initialize the actual client (existing logic)"""
         # Input validation
         try:
             self.provider = ProviderType(provider.lower())

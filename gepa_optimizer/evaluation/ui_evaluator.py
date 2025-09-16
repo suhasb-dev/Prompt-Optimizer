@@ -7,9 +7,11 @@ import logging
 import difflib
 from typing import Any, Dict, List, Optional
 
+from .base_evaluator import BaseEvaluator
+
 logger = logging.getLogger(__name__)
 
-class UITreeEvaluator:
+class UITreeEvaluator(BaseEvaluator):
     """
     Comprehensive evaluator for UI tree extraction quality.
     """
@@ -22,19 +24,31 @@ class UITreeEvaluator:
             metric_weights: A dictionary of weights for different metrics.
                             If None, default weights will be used.
         """
-        self.metric_weights = metric_weights or {
+        # Set default weights for UI tree evaluation
+        default_weights = {
             "element_completeness": 0.3,      # How many elements are captured
             "element_type_accuracy": 0.25,    # Correct element types (Button, Text, etc.)
             "text_content_accuracy": 0.2,     # Text content matches
             "hierarchy_accuracy": 0.15,       # Parent-child relationships
             "style_accuracy": 0.1,            # Style properties captured
         }
-        # Ensure weights sum to 1.0 (or normalize them)
+        
+        # Use provided weights or defaults
+        weights = metric_weights or default_weights
+        
+        # Initialize parent class
+        super().__init__(metric_weights=weights)
+        
+        # Normalize weights
+        self._normalize_weights()
+    
+    def _normalize_weights(self):
+        """Normalize weights to sum to 1.0"""
         total_weight = sum(self.metric_weights.values())
-        if total_weight == 0:
-            logger.warning("Total metric weight is zero. Scores will be zero.")
-        else:
+        if total_weight > 0:
             self.metric_weights = {k: v / total_weight for k, v in self.metric_weights.items()}
+        else:
+            self.logger.warning("Total metric weight is zero. Scores will be zero.")
 
     def evaluate(self, predicted_json: Dict[str, Any], expected_json: Dict[str, Any]) -> Dict[str, float]:
         """

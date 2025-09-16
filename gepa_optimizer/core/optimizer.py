@@ -30,14 +30,22 @@ class GepaOptimizer:
     Provides both simple and advanced optimization capabilities.
     """
     
-    def __init__(self, config: Optional[OptimizationConfig] = None, llm_model_name: Optional[str] = None, metric_weights: Optional[Dict[str, float]] = None):
+    def __init__(self, config: Optional[OptimizationConfig] = None, 
+                 adapter_type: str = "ui_tree",
+                 custom_adapter: Optional[Any] = None,
+                 llm_model_name: Optional[str] = None, 
+                 metric_weights: Optional[Dict[str, float]] = None,
+                 **kwargs):
         """
         Initialize the optimizer
         
         Args:
             config: Optimization configuration (required)
+            adapter_type: Type of adapter to use ("ui_tree", "universal")
+            custom_adapter: Custom adapter instance (overrides adapter_type)
             llm_model_name: [Deprecated] Use config.model instead. Will be removed in future versions.
             metric_weights: Optional dictionary of weights for evaluation metrics.
+            **kwargs: Additional parameters for universal adapter (llm_client, evaluator, etc.)
             
         Raises:
             ValueError: If required configuration is missing
@@ -54,19 +62,45 @@ class GepaOptimizer:
         self.api_manager = APIKeyManager()
         self.result_processor = ResultProcessor()
         
-        # Initialize adapter with model config
-        self.custom_adapter = CustomGepaAdapter(
-            model_config=self.config.model,
-            metric_weights=metric_weights
-        )
+        # Initialize adapter based on configuration
+        if custom_adapter:
+            # User provided custom adapter
+            from .base_adapter import BaseGepaAdapter
+            if not isinstance(custom_adapter, BaseGepaAdapter):
+                raise TypeError("custom_adapter must be an instance of BaseGepaAdapter")
+            self.adapter = custom_adapter
+            self.logger.info("Using user-provided custom adapter")
+        elif adapter_type == "ui_tree":
+            # Legacy UI tree adapter (backward compatibility)
+            self.adapter = CustomGepaAdapter(
+                model_config=self.config.model,
+                metric_weights=metric_weights
+            )
+            self.logger.info("Using UI tree adapter (legacy mode)")
+        elif adapter_type == "universal":
+            # Universal adapter requires user to provide components
+            llm_client = kwargs.get('llm_client')
+            evaluator = kwargs.get('evaluator')
+            
+            if not llm_client or not evaluator:
+                raise ValueError("llm_client and evaluator are required for universal adapter")
+            
+            from .universal_adapter import UniversalGepaAdapter
+            self.adapter = UniversalGepaAdapter(
+                llm_client=llm_client,
+                evaluator=evaluator,
+                data_converter=kwargs.get('data_converter')
+            )
+            self.logger.info("Using universal adapter")
+        else:
+            raise ValueError(f"Unknown adapter_type: {adapter_type}")
+        
+        # Keep backward compatibility
+        self.custom_adapter = self.adapter
         
         # Log model configuration
-        model_config = self.config.model
-        model_info = {
-            'provider': getattr(model_config, 'provider', 'unknown'),
-            'model_name': getattr(model_config, 'model_name', str(model_config)),
-        }
-        self.logger.info(f"Initialized model with config: {model_info}")
+        model_info = self.adapter.get_performance_stats()
+        self.logger.info(f"Initialized adapter: {model_info}")
         
         # Set up logging
         logging.basicConfig(
@@ -125,8 +159,8 @@ class GepaOptimizer:
             
             # Step 4: Run GEPA optimization
             print("🚀 Starting GEPA optimization...")
-            gepa_result = await self._run_gepa_optimization(
-                adapter=self.custom_adapter,
+            gepa_result, actual_iterations = await self._run_gepa_optimization(  # Unpack tuple
+                adapter=self.adapter,
                 seed_candidate=seed_candidate,
                 trainset=trainset,
                 valset=valset,
@@ -139,7 +173,8 @@ class GepaOptimizer:
             processed_result = self.result_processor.process_full_result(
                 result=gepa_result,
                 original_prompt=seed_prompt,
-                optimization_time=optimization_time
+                optimization_time=optimization_time,
+                actual_iterations=actual_iterations  # Pass the actual iteration count
             )
             
             # Step 6: Create result objects
@@ -244,7 +279,7 @@ class GepaOptimizer:
         sanitized_prompt = sanitize_prompt(seed_prompt)
         return {'system_prompt': sanitized_prompt}
 
-    async def _run_gepa_optimization(self, adapter: CustomGepaAdapter, seed_candidate: Any, trainset: List[Any], valset: List[Any], **kwargs) -> Dict[str, Any]:
+    async def _run_gepa_optimization(self, adapter, seed_candidate: Any, trainset: List[Any], valset: List[Any], **kwargs) -> tuple:  # Return tuple
         """
         Run GEPA optimization with the given adapter and data
         
@@ -349,11 +384,11 @@ class GepaOptimizer:
                 lambda: self._run_gepa_with_logging(gepa_params, gepa_output)
             )
             
-            # 🎯 NEW: Process and log pareto front information
+            # 🎯 NEW: Process and log pareto front information, extract iteration count
             gepa_logs = gepa_output.getvalue()
-            self._log_pareto_front_info(gepa_logs)
+            actual_iterations = self._log_pareto_front_info(gepa_logs)  # Get iteration count
             
-            return result
+            return result, actual_iterations  # Return both result and iteration count
         except Exception as e:
             # Try to extract partial results before failing
             self.logger.warning(f"GEPA optimization failed: {e}")
@@ -382,11 +417,22 @@ class GepaOptimizer:
         with redirect_stdout(output_buffer), redirect_stderr(output_buffer):
             return gepa.optimize(**gepa_params)
     
-    def _log_pareto_front_info(self, gepa_logs: str) -> None:
-        """Extract and log pareto front information from GEPA logs."""
+    def _log_pareto_front_info(self, gepa_logs: str) -> int:  # Return int instead of None
+        """Extract and log pareto front information from GEPA logs. Returns max iteration count."""
         lines = gepa_logs.split('\n')
+        current_iteration = 0
+        max_iteration = 0  # Track max iteration
         
         for line in lines:
+            # Look for iteration information
+            if 'iteration' in line.lower():
+                # Try to extract iteration number
+                import re
+                iteration_match = re.search(r'iteration\s+(\d+)', line.lower())
+                if iteration_match:
+                    current_iteration = int(iteration_match.group(1))
+                    max_iteration = max(max_iteration, current_iteration)  # Track max
+            
             # Look for pareto front information
             if 'pareto front' in line.lower() or 'new program' in line.lower():
                 self.logger.info(f"🎯 GEPA: {line.strip()}")
@@ -394,6 +440,19 @@ class GepaOptimizer:
                 self.logger.info(f" GEPA: {line.strip()}")
             elif 'best' in line.lower() and 'score' in line.lower():
                 self.logger.info(f"🏆 GEPA: {line.strip()}")
+            
+            # Look for new proposed candidates (this is tricky since GEPA doesn't explicitly log them)
+            # We'll try to detect when a new candidate is being evaluated
+            if 'evaluating' in line.lower() and 'candidate' in line.lower():
+                self.logger.info(f"🔄 GEPA: {line.strip()}")
+                # Try to log this as a proposed candidate if we have the adapter
+                if hasattr(self, 'adapter') and hasattr(self.adapter, 'log_proposed_candidate'):
+                    # We can't get the actual candidate from GEPA logs, but we can log that one was proposed
+                    print(f"\n🔄 GEPA proposed a new candidate in iteration {current_iteration}")
+                    print("   (Candidate details not available from GEPA logs)")
+    
+        self.logger.info(f"📊 GEPA completed {max_iteration} iterations")
+        return max_iteration  # Return the max iteration count
     
     def optimize_sync(self,
                      model: str,

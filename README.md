@@ -20,6 +20,7 @@ GEPA Optimizer is a sophisticated framework that automatically improves prompts 
 - **⚙️ Flexible Configuration**: Easy-to-use configuration system for any optimization scenario
 - **💰 Cost Optimization**: Built-in budget controls and cost estimation
 - **🎨 UI Tree Extraction**: Specialized for optimizing UI interaction and screen understanding tasks
+- **🔧 Extensible Architecture**: Create custom evaluators and adapters for any use case
 
 ## 🚀 Quick Start
 
@@ -103,6 +104,70 @@ async def optimize_ui_prompt():
     print(f"📊 Improvement: {result.improvement_percent:.2f}%")
 
 asyncio.run(optimize_ui_prompt())
+```
+
+### Universal Custom Use Cases
+
+```python
+import asyncio
+from gepa_optimizer import (
+    GepaOptimizer, OptimizationConfig, ModelConfig,
+    BaseEvaluator, BaseLLMClient, VisionLLMClient
+)
+
+class CustomEvaluator(BaseEvaluator):
+    """Your custom evaluation logic for any use case"""
+    
+    def evaluate(self, predicted: str, expected: str) -> Dict[str, float]:
+        # Implement your custom metrics
+        accuracy = calculate_accuracy(predicted, expected)
+        relevance = calculate_relevance(predicted, expected)
+        
+        return {
+            "accuracy": accuracy,
+            "relevance": relevance,
+            "composite_score": (accuracy + relevance) / 2
+        }
+
+async def custom_optimization():
+    # Create your custom components
+    llm_client = VisionLLMClient(
+        provider="openai",
+        model_name="gpt-4o",
+        api_key="your-api-key"
+    )
+    evaluator = CustomEvaluator()
+    
+    # Configure optimization
+    config = OptimizationConfig(
+        model="openai/gpt-4o",
+        reflection_model="openai/gpt-4o",
+        max_iterations=10,
+        max_metric_calls=50
+    )
+    
+    # Use universal adapter
+    optimizer = GepaOptimizer(
+        config=config,
+        adapter_type="universal",
+        llm_client=llm_client,
+        evaluator=evaluator
+    )
+    
+    # Your custom dataset
+    dataset = [
+        {"input": "Your input", "output": "Expected output"},
+        # ... more examples
+    ]
+    
+    result = await optimizer.train(
+        seed_prompt="Your initial prompt",
+        dataset=dataset
+    )
+    
+    print(f"🎯 Optimized prompt: {result.prompt}")
+
+asyncio.run(custom_optimization())
 ```
 
 ## 📚 Comprehensive Examples
@@ -190,15 +255,15 @@ config = OptimizationConfig(
 ├─────────────────────────────────────────────────────────────────┤
 │  Core Processing Layer                                          │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │CustomGepaAdapter│  │ ResultProcessor │  │UniversalConverter│ │
-│  │  (GEPA Bridge)  │  │ (Result Handler)│  │ (Data Converter)│ │
+│  │CustomGepaAdapter│  │UniversalAdapter │  │UniversalConverter│ │
+│  │  (UI Tree)      │  │  (Universal)    │  │ (Data Converter)│ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 ├─────────────────────────────────────────────────────────────────┤
 │  Evaluation & LLM Layer                                        │
-│  ┌─────────────────┐  ┌─────────────────┐                      │
-│  │UITreeEvaluator  │  │ VisionLLMClient │                      │
-│  │ (Metrics Calc)  │  │  (LLM Interface)│                      │
-│  └─────────────────┘  └─────────────────┘                      │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │UITreeEvaluator  │  │BaseEvaluator    │  │VisionLLMClient  │ │
+│  │ (UI Metrics)    │  │ (Custom Metrics)│  │  (LLM Interface)│ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 ├─────────────────────────────────────────────────────────────────┤
 │  Data & Utility Layer                                          │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
@@ -215,7 +280,9 @@ gepa-optimizer/
 ├── gepa_optimizer/              # Main package
 │   ├── core/                   # Core optimization engine
 │   │   ├── optimizer.py        # Main GepaOptimizer class
-│   │   ├── custom_adapter.py   # GEPA framework integration
+│   │   ├── custom_adapter.py   # UI tree GEPA integration
+│   │   ├── universal_adapter.py # Universal GEPA integration
+│   │   ├── base_adapter.py     # Base adapter class
 │   │   └── result.py           # Result processing
 │   ├── models/                 # Configuration and data models
 │   │   ├── config.py           # Configuration classes
@@ -225,15 +292,18 @@ gepa-optimizer/
 │   │   ├── converters.py       # Universal data converter
 │   │   ├── loaders.py          # File loading utilities
 │   │   └── validators.py       # Data validation
-│   ├── evaluation/             # Evaluation metrics and UI analysis
-│   │   └── ui_evaluator.py     # UI tree evaluation metrics
+│   ├── evaluation/             # Evaluation metrics and analysis
+│   │   ├── ui_evaluator.py     # UI tree evaluation metrics
+│   │   └── base_evaluator.py   # Base evaluator class
 │   ├── llms/                   # LLM client integrations
-│   │   └── vision_llm.py       # Multi-modal LLM client
+│   │   ├── vision_llm.py       # Multi-modal LLM client
+│   │   └── base_llm.py         # Base LLM client class
 │   ├── utils/                  # Utilities and helpers
 │   │   ├── api_keys.py         # API key management
 │   │   ├── exceptions.py       # Custom exceptions
 │   │   ├── helpers.py          # Helper functions
-│   │   └── logging.py          # Logging utilities
+│   │   ├── logging.py          # Logging utilities
+│   │   └── metrics.py          # Metrics utilities
 │   └── cli.py                  # Command-line interface
 ├── tests/                      # Test suite
 ├── examples/                   # Usage examples
@@ -296,6 +366,10 @@ gepa-optimizer/
 - **💻 Code Generation**: Optimize prompts for programming tasks
 - **👁️ Multi-modal Applications**: Vision + text prompt optimization
 - **🎯 Domain-Specific Tasks**: Fine-tune prompts for specialized domains
+- **📊 Data Analysis**: Optimize prompts for data interpretation and analysis
+- **🔍 Search & Retrieval**: Improve search query optimization
+- **📚 Educational Content**: Optimize prompts for learning and teaching
+- **🎨 Creative Writing**: Enhance prompts for creative and artistic tasks
 
 ## 📊 Performance & Benchmarks
 
@@ -359,4 +433,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️
+** Made with ❤️ ** 
