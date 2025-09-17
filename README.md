@@ -352,11 +352,11 @@ gepa-optimizer/
 
 | Resource | Description |
 |----------|-------------|
-| [API Reference](docs/api-reference.md) | Complete API documentation |
-| [Examples](examples/) | Practical examples and tutorials |
-| [Quick Start Guide](docs/quickstart.md) | Get started in 5 minutes |
-| [Configuration Guide](docs/configuration.md) | Advanced configuration options |
-| [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
+| [🏗️ System Architecture](docs/Architecture.md) | Complete system architecture and design patterns |
+| [📁 Examples](examples/) | Practical examples and tutorials |
+| [🧪 Test Files](#testing--validation) | Comprehensive test suite documentation |
+| [🚀 Quick Start](#quick-start) | Get started in 5 minutes |
+| [⚙️ Configuration](#configuration) | Advanced configuration options |
 
 ## 🎯 Use Cases
 
