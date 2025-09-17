@@ -1,9 +1,6 @@
 # 🚀 GEPA Universal Prompt Optimizer
 
-[![PyPI version](https://badge.fury.io/py/gepa-optimizer.svg)](https://badge.fury.io/py/gepa-optimizer)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/suhasb-dev/Prompt-Optimizer/workflows/Tests/badge.svg)](https://github.com/suhasb-dev/Prompt-Optimizer/actions)
+[![PyPI version](https://badge.fury.io/py/gepa-optimizer.svg)](https://badge.fury.io/py/gepa-optimizer) [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Tests](https://github.com/suhasb-dev/Prompt-Optimizer/workflows/Tests/badge.svg)](https://github.com/suhasb-dev/Prompt-Optimizer/actions)
 
 > **A production-ready Python library for universal prompt optimization using the GEPA (Generative Evaluation and Prompt Adaptation) framework. Built for developers who need reliable, scalable prompt optimization with comprehensive evaluation metrics.**
 
@@ -12,10 +9,11 @@
 **You MUST create custom evaluators and LLM clients to use this library.** This is not optional - the GEPA Universal Prompt Optimizer is designed for specialized, domain-specific applications where you define your own success metrics.
 
 ### Why Custom Components?
-- 🎯 **Domain-Specific**: Each use case needs different evaluation criteria
-- 📊 **No Generic Metrics**: Generic evaluation doesn't work for specialized tasks  
-- 🔧 **Your Success Criteria**: You define what "good" means for your problem
-- 🚀 **Optimization Target**: The system optimizes based on YOUR metrics
+
+* 🎯 **Domain-Specific**: Each use case needs different evaluation criteria
+* 📊 **No Generic Metrics**: Generic evaluation doesn't work for specialized tasks
+* 🔧 **Your Success Criteria**: You define what "good" means for your problem
+* 🚀 **Optimization Target**: The system optimizes based on YOUR metrics
 
 ## 🚀 Quick Start
 
@@ -72,35 +70,36 @@ asyncio.run(optimize_prompt())
 
 ## 📚 Documentation
 
-**📖 [View Full Documentation](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/)**
+**📖** [**View Full Documentation**](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/)
 
 ### Quick Links
-- [🚀 Getting Started](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/getting-started/)
-- [📖 Tutorials](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/tutorials/)
-- [🔧 API Reference](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/api-reference/)
-- [📁 Examples](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/examples/)
-- [🏗️ Architecture](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/architecture/)
+
+* [🚀 Getting Started](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/getting-started/)
+* [📖 Tutorials](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/tutorials/)
+* [🔧 API Reference](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/api-reference/)
+* [📁 Examples](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/examples/)
+* [🏗️ Architecture](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/architecture/)
 
 ## 🎯 Key Features
 
-- **🔄 Universal Prompt Optimization**: Works with any LLM provider (OpenAI, Anthropic, Google, Hugging Face)
-- **👁️ Multi-Modal Support**: Optimize prompts for vision-capable models (GPT-4V, Claude-3, Gemini)
-- **📊 Advanced Evaluation**: Comprehensive metrics for UI tree extraction and general prompt performance
-- **🏭 Production Ready**: Enterprise-grade reliability with async support, error handling, and monitoring
-- **⚙️ Flexible Configuration**: Easy-to-use configuration system for any optimization scenario
-- **💰 Cost Optimization**: Built-in budget controls and cost estimation
-- **🎨 UI Tree Extraction**: Specialized for optimizing UI interaction and screen understanding tasks
-- **🔧 Extensible Architecture**: Create custom evaluators and adapters for any use case
+* **🔄 Universal Prompt Optimization**: Works with any LLM provider (OpenAI, Anthropic, Google, Hugging Face)
+* **👁️ Multi-Modal Support**: Optimize prompts for vision-capable models (GPT-4V, Claude-3, Gemini)
+* **📊 Advanced Evaluation**: Comprehensive metrics for UI tree extraction and general prompt performance
+* **🏭 Production Ready**: Enterprise-grade reliability with async support, error handling, and monitoring
+* **⚙️ Flexible Configuration**: Easy-to-use configuration system for any optimization scenario
+* **💰 Cost Optimization**: Built-in budget controls and cost estimation
+* **🎨 UI Tree Extraction**: Specialized for optimizing UI interaction and screen understanding tasks
+* **🔧 Extensible Architecture**: Create custom evaluators and adapters for any use case
 
 ## 🧪 Testing & Validation
 
 The library includes comprehensive test suites demonstrating real-world usage:
 
-| Test File | Purpose | Key Features | Dataset |
-|-----------|---------|--------------|---------|
+| Test File                                                                        | Purpose                                             | Key Features                                                                  | Dataset                            |
+| -------------------------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------- |
 | [`test_customer_service_optimization.py`](test_customer_service_optimization.py) | Customer service optimization with business metrics | Real customer service dataset, measurable improvements, robust error handling | 100+ customer service interactions |
-| [`test_text_generation.py`](test_text_generation.py) | General text generation optimization | Custom evaluation metrics, universal adapter usage | Text generation samples |
-| [`test_ui_optimization.py`](test_ui_optimization.py) | Multi-modal UI tree extraction | Vision model integration, screenshot analysis, UI element extraction | UI screenshots + JSON trees |
+| [`test_text_generation.py`](test_text_generation.py)                             | General text generation optimization                | Custom evaluation metrics, universal adapter usage                            | Text generation samples            |
+| [`test_ui_optimization.py`](test_ui_optimization.py)                             | Multi-modal UI tree extraction                      | Vision model integration, screenshot analysis, UI element extraction          | UI screenshots + JSON trees        |
 
 ### Running Tests
 
@@ -117,18 +116,18 @@ python test_ui_optimization.py
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](broken-reference) for details.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE/) file for details.
 
 ## 📞 Support
 
-- 📧 Email: s8hasgrylls@gmail.com
-- 🐛 Issues: [GitHub Issues](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
-- 📖 Documentation: [GitBook](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/)
+* 📧 Email: s8hasgrylls@gmail.com
+* 🐛 Issues: [GitHub Issues](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
+* 📖 Documentation: [GitBook](https://suhasb-dev.gitbook.io/gepa-universal-prompt-optimizer/)
 
----
+***
 
 **Made with ❤️ for the AI community**
