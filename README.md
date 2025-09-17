@@ -356,7 +356,7 @@ gepa-optimizer/
 | [📁 Examples](examples/) | Practical examples and tutorials |
 | [🧪 Test Files](#testing--validation) | Comprehensive test suite documentation |
 | [🚀 Quick Start](#quick-start) | Get started in 5 minutes |
-| [⚙️ Configuration](#configuration) | Advanced configuration options |
+| [⚙️ Configuration](docs/getting-started/basic-usage.md#configuration-best-practices) | Advanced configuration options |
 
 ## 🎯 Use Cases
 
@@ -633,7 +633,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **🐛 Issues**: [GitHub Issues](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
 - **💬 Discussions**: [GitHub Discussions](https://github.com/suhasb-dev/Prompt-Optimizer/discussions)
 - **📧 Email**: s8hasgrylls@gmail.com
-- **📚 Documentation**: [Full Documentation](https://gepa-optimizer.readthedocs.io/)
+- **📚 Documentation**: [Full Documentation](https://app.gitbook.com/o/PaAFFZJTHkXwqIHMDnlx/s/9ksQ7VqNPiO7d0WiRkl2/)
 
 ## 🌟 Star History
 
