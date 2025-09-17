@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/gepa-optimizer.svg)](https://badge.fury.io/py/gepa-optimizer) [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Tests](https://github.com/suhasb-dev/Prompt-Optimizer/workflows/Tests/badge.svg)](https://github.com/suhasb-dev/Prompt-Optimizer/actions)
 
-> **A production-ready Python library for universal prompt optimization using the GEPA (Generative Evaluation and Prompt Adaptation) framework. Built for developers who need reliable, scalable prompt optimization with comprehensive evaluation metrics.**
+> **A production-ready Python library for universal prompt optimization using the GEPA  \[** [**https://arxiv.org/abs/2507.19457**](https://arxiv.org/abs/2507.19457) **] Built for developers who need reliable, scalable prompt optimization with comprehensive evaluation metrics.**
 
 ## ⚠️ **IMPORTANT: Custom Components Required**
 
