@@ -74,8 +74,8 @@ The library includes comprehensive test suites demonstrating real-world performa
 
 ## 🆘 Support
 
-- **🐛 Issues**: [GitHub Issues](https://github.com/Suhas4321/Prompt-Optimizer/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/Suhas4321/Prompt-Optimizer/discussions)
+- **🐛 Issues**: [GitHub Issues](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/suhasb-dev/Prompt-Optimizer/discussions)
 - **📧 Email**: s8hasgrylls@gmail.com
 
 ---

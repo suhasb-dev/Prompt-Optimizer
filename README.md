@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/gepa-optimizer.svg)](https://badge.fury.io/py/gepa-optimizer)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/Suhas4321/Prompt-Optimizer/workflows/Tests/badge.svg)](https://github.com/Suhas4321/Prompt-Optimizer/actions)
+[![Tests](https://github.com/suhasb-dev/Prompt-Optimizer/workflows/Tests/badge.svg)](https://github.com/suhasb-dev/Prompt-Optimizer/actions)
 
 > **A production-ready Python library for universal prompt optimization using the GEPA (Generative Evaluation and Prompt Adaptation) framework. Built for developers who need reliable, scalable prompt optimization with comprehensive evaluation metrics.**
 
@@ -352,7 +352,7 @@ gepa-optimizer/
 
 | Resource | Description |
 |----------|-------------|
-| [🏗️ System Architecture](docs/Architecture.md) | Complete system architecture and design patterns |
+| [🏗️ System Architecture](docs/architecture/system-overview.md) | Complete system architecture and design patterns |
 | [📁 Examples](examples/) | Practical examples and tutorials |
 | [🧪 Test Files](#testing--validation) | Comprehensive test suite documentation |
 | [🚀 Quick Start](#quick-start) | Get started in 5 minutes |
@@ -630,14 +630,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **🐛 Issues**: [GitHub Issues](https://github.com/Suhas4321/Prompt-Optimizer/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/Suhas4321/Prompt-Optimizer/discussions)
+- **🐛 Issues**: [GitHub Issues](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/suhasb-dev/Prompt-Optimizer/discussions)
 - **📧 Email**: s8hasgrylls@gmail.com
 - **📚 Documentation**: [Full Documentation](https://gepa-optimizer.readthedocs.io/)
 
 ## 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Suhas4321/Prompt-Optimizer&type=Date)](https://star-history.com/#Suhas4321/Prompt-Optimizer&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=suhasb-dev/Prompt-Optimizer&type=Date)](https://star-history.com/#suhasb-dev/Prompt-Optimizer&Date)
 
 ---
 

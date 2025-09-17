@@ -20,7 +20,7 @@ pip install gepa-optimizer
 
 ```bash
 # Clone the repository
-git clone https://github.com/Suhas4321/Prompt-Optimizer.git
+git clone https://github.com/suhasb-dev/Prompt-Optimizer.git
 cd Prompt-Optimizer
 
 # Install in development mode
@@ -31,7 +31,7 @@ pip install -e .
 
 ```bash
 # Clone the repository
-git clone https://github.com/Suhas4321/Prompt-Optimizer.git
+git clone https://github.com/suhasb-dev/Prompt-Optimizer.git
 cd Prompt-Optimizer
 
 # Install with development dependencies
@@ -185,5 +185,5 @@ Once installation is complete:
 If you encounter any installation issues:
 
 - Check the [troubleshooting section](#troubleshooting) above
-- Open an issue on [GitHub](https://github.com/Suhas4321/Prompt-Optimizer/issues)
+- Open an issue on [GitHub](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
 - Contact us at s8hasgrylls@gmail.com

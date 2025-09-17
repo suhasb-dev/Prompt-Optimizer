@@ -46,7 +46,7 @@ pip install gepa-optimizer
 export OPENAI_API_KEY="your-openai-api-key"
 
 # Clone the repository for datasets
-git clone https://github.com/Suhas4321/Prompt-Optimizer.git
+git clone https://github.com/suhasb-dev/Prompt-Optimizer.git
 cd Prompt-Optimizer
 ```
 
@@ -116,7 +116,7 @@ Each tutorial follows this structure:
 
 - **Stuck on a tutorial?** Check the troubleshooting section in each tutorial
 - **Want to contribute?** See our [Contributing Guide](../contributing/)
-- **Found a bug?** Open an issue on [GitHub](https://github.com/Suhas4321/Prompt-Optimizer/issues)
+- **Found a bug?** Open an issue on [GitHub](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
 - **Need support?** Contact us at s8hasgrylls@gmail.com
 
 ## 🎉 Ready to Start?

@@ -190,5 +190,5 @@ Now that you've seen the basics, explore:
 ## 🆘 Need Help?
 
 - Check the [troubleshooting section](../troubleshooting.md)
-- Open an issue on [GitHub](https://github.com/Suhas4321/Prompt-Optimizer/issues)
+- Open an issue on [GitHub](https://github.com/suhasb-dev/Prompt-Optimizer/issues)
 - Contact us at s8hasgrylls@gmail.com
