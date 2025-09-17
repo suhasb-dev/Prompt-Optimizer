@@ -70,29 +70,36 @@ input,output
 ]
 ```
 
-### 3. **Custom Evaluators** - Define Your Success Metrics
+### 3. **Custom Evaluators** - ⚠️ **REQUIRED: Define Your Success Metrics**
 
-Create evaluators tailored to your use case:
+**You MUST create custom evaluators - this is not optional!** The library cannot work without your domain-specific evaluation metrics:
 
 ```python
 from gepa_optimizer.evaluation import BaseEvaluator
 from typing import Dict
 
 class MyCustomEvaluator(BaseEvaluator):
+    """
+    ⚠️ REQUIRED: Custom evaluator for your specific use case.
+    
+    You MUST implement evaluate() with:
+    1. Your domain-specific metrics
+    2. A composite_score (drives optimization)
+    """
     def evaluate(self, predicted: str, expected: str) -> Dict[str, float]:
         # Calculate your custom metrics
         accuracy = self._calculate_accuracy(predicted, expected)
         relevance = self._calculate_relevance(predicted, expected)
         clarity = self._calculate_clarity(predicted)
         
-        # Composite score (required for optimization)
+        # ⚠️ REQUIRED: Composite score drives the optimization
         composite_score = (accuracy * 0.4 + relevance * 0.4 + clarity * 0.2)
         
         return {
             "accuracy": accuracy,
             "relevance": relevance,
             "clarity": clarity,
-            "composite_score": composite_score  # Required!
+            "composite_score": composite_score  # ⚠️ MANDATORY!
         }
     
     def _calculate_accuracy(self, predicted: str, expected: str) -> float:
@@ -108,7 +115,9 @@ class MyCustomEvaluator(BaseEvaluator):
         pass
 ```
 
-### 4. **Custom LLM Clients** - Use Any LLM Provider
+### 4. **Custom LLM Clients** - ⚠️ **REQUIRED: Use Any LLM Provider**
+
+**You MUST create custom LLM clients - this is not optional!** The library needs your specific LLM integration:
 
 ```python
 from gepa_optimizer.llms import BaseLLMClient
@@ -147,10 +156,15 @@ config = OptimizationConfig(
 )
 ```
 
-### Step 3: Create Custom Components
+### Step 3: ⚠️ **REQUIRED: Create Custom Components**
+
+**You cannot skip this step - both components are mandatory:**
 
 ```python
+# ⚠️ REQUIRED: Custom evaluator with your metrics
 evaluator = MyCustomEvaluator()
+
+# ⚠️ REQUIRED: Custom LLM client for your provider
 llm_client = MyLLMClient(api_key="your-key")
 ```
 
@@ -307,8 +321,10 @@ Now that you understand the basics:
 
 ## 🎯 Key Takeaways
 
-- **Configuration is key**: Use `OptimizationConfig` to control everything
-- **Custom evaluators**: Define metrics that matter for your use case
-- **Start small**: Begin with conservative settings and scale up
-- **Monitor costs**: Set budget limits to avoid surprises
-- **Iterate and improve**: Use results to refine your approach
+- **⚠️ Custom Components Required**: You MUST create evaluators and LLM clients
+- **🎯 Domain-Specific Metrics**: Define what "good" means for YOUR use case
+- **⚙️ Configuration is key**: Use `OptimizationConfig` to control everything
+- **🚀 Start small**: Begin with conservative settings and scale up
+- **💰 Monitor costs**: Set budget limits to avoid surprises
+- **🔄 Iterate and improve**: Use results to refine your approach
+- **💡 No Generic Solutions**: This library is designed for specialized applications

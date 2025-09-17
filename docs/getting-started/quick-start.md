@@ -2,10 +2,21 @@
 
 Get started with GEPA Universal Prompt Optimizer in 5 minutes! This guide will walk you through your first prompt optimization.
 
+## ⚠️ **IMPORTANT: Custom Evaluators Required**
+
+**You MUST define your own evaluation metrics to use this library.** The GEPA Universal Prompt Optimizer requires custom evaluators because:
+
+- 🎯 **Domain-specific metrics**: Each use case needs different success criteria
+- 📊 **No one-size-fits-all**: Generic metrics don't work for specialized tasks
+- 🔧 **Flexibility**: You define what "good" means for your specific problem
+- 🚀 **Optimization target**: The system optimizes based on YOUR metrics
+
 ## 🎯 What You'll Build
 
 By the end of this guide, you'll have:
 - ✅ Installed and configured the library
+- ✅ **Created a custom evaluator** (required!)
+- ✅ **Created a custom LLM client** (required!)
 - ✅ Run your first prompt optimization
 - ✅ Seen measurable improvements in prompt performance
 - ✅ Understood the basic workflow
@@ -50,10 +61,17 @@ dataset = [
     }
 ]
 
-# Simple evaluator for demonstration
+# ⚠️ REQUIRED: Custom evaluator - you MUST create this!
 class SimpleEvaluator(BaseEvaluator):
+    """
+    Custom evaluator for measuring prompt performance.
+    
+    ⚠️ IMPORTANT: You MUST implement the evaluate() method with:
+    1. Your custom metrics (accuracy, relevance, etc.)
+    2. A composite_score (required for optimization)
+    """
     def evaluate(self, predicted: str, expected: str) -> Dict[str, float]:
-        # Simple evaluation based on word overlap
+        # Example: Simple evaluation based on word overlap
         predicted_words = set(predicted.lower().split())
         expected_words = set(expected.lower().split())
         
@@ -63,18 +81,28 @@ class SimpleEvaluator(BaseEvaluator):
         overlap = len(predicted_words.intersection(expected_words))
         accuracy = overlap / len(expected_words)
         
+        # ⚠️ REQUIRED: composite_score is mandatory for optimization
         return {
             "accuracy": accuracy,
-            "composite_score": accuracy
+            "composite_score": accuracy  # This drives the optimization!
         }
 
-# Simple LLM client for demonstration
+# ⚠️ REQUIRED: Custom LLM client - you MUST create this!
 class SimpleLLMClient(BaseLLMClient):
+    """
+    Custom LLM client for interacting with your chosen model.
+    
+    ⚠️ IMPORTANT: You MUST implement the generate() method to:
+    1. Connect to your LLM provider (OpenAI, Google, Anthropic, etc.)
+    2. Handle API calls and responses
+    3. Return generated text
+    """
     def __init__(self):
         from openai import OpenAI
         self.client = OpenAI()
     
     def generate(self, prompt: str, **kwargs) -> str:
+        # Example: OpenAI API call
         response = self.client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -95,9 +123,9 @@ async def main():
     # Initialize optimizer
     optimizer = GepaOptimizer(config=config)
     
-    # Create custom components
-    evaluator = SimpleEvaluator()
-    llm_client = SimpleLLMClient()
+    # ⚠️ REQUIRED: Create your custom components
+    evaluator = SimpleEvaluator()  # Your custom evaluation metrics
+    llm_client = SimpleLLMClient()  # Your custom LLM client
     
     print("🚀 Starting prompt optimization...")
     print(f"📊 Dataset size: {len(dataset)} samples")
@@ -181,11 +209,12 @@ Now that you've seen the basics, explore:
 
 ## 🎯 Key Takeaways
 
-- **Simple Setup**: Just install, set API key, and run
-- **Fast Results**: Get improvements in minutes, not hours
-- **Customizable**: Use your own evaluators and LLM clients
-- **Measurable**: See concrete performance improvements
-- **Extensible**: Easy to adapt for any use case
+- **⚠️ Custom Components Required**: You MUST create evaluators and LLM clients
+- **🎯 Domain-Specific**: Define metrics that matter for YOUR use case
+- **🚀 Fast Results**: Get improvements in minutes, not hours
+- **📊 Measurable**: See concrete performance improvements based on your metrics
+- **🔧 Extensible**: Easy to adapt for any use case with custom components
+- **💡 No Generic Solutions**: This library is designed for specialized, custom applications
 
 ## 🆘 Need Help?
 

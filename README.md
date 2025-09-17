@@ -22,6 +22,16 @@ GEPA Optimizer is a sophisticated framework that automatically improves prompts 
 - **🎨 UI Tree Extraction**: Specialized for optimizing UI interaction and screen understanding tasks
 - **🔧 Extensible Architecture**: Create custom evaluators and adapters for any use case
 
+## ⚠️ **IMPORTANT: Custom Components Required**
+
+**You MUST create custom evaluators and LLM clients to use this library.** This is not optional - the GEPA Universal Prompt Optimizer is designed for specialized, domain-specific applications where you define your own success metrics.
+
+### Why Custom Components?
+- 🎯 **Domain-Specific**: Each use case needs different evaluation criteria
+- 📊 **No Generic Metrics**: Generic evaluation doesn't work for specialized tasks  
+- 🔧 **Your Success Criteria**: You define what "good" means for your problem
+- 🚀 **Optimization Target**: The system optimizes based on YOUR metrics
+
 ## 🚀 Quick Start
 
 ### Installation
